@@ -1,4 +1,5 @@
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -7,42 +8,73 @@ import java.net.Socket;
  * Created by Jason on 2017/9/6.
  */
 public class ChatServer {
+    ServerSocket ss = null;
+    boolean started = false;
+
     public static void main(String[] args) {
-        ServerSocket ss = null;
-        Socket s = null;
-        DataInputStream dis = null;
-        boolean started = false;
+        new ChatServer().start();
+    }
+
+    public void start() {
         try {
             ss = new ServerSocket(8888);
-
             started = true;
             while (started) {
-                boolean bConnected = false;
-                s = ss.accept();
+                Socket s = ss.accept();
+                Client c = new Client(s);
                 System.out.println("A Client Connected!");
-                bConnected = true;
-                dis = new DataInputStream(s.getInputStream());
-                while (bConnected) {
-                    String str = dis.readUTF();
-                    System.out.println(str);
-                }
-                //dis.close();
+                new Thread(c).start();
+
             }
         } catch (IOException e) {
 
-            //e.printStackTrace();
             System.out.println("Client Closed!");
         }finally {
             try {
-                if (dis != null) {
-                    dis.close();
-                }
-                if (s != null) {
-                    s.close();
-                }
-            } catch (IOException e1) {
-                e1.printStackTrace();
+                ss.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
-}
+
+    class Client implements Runnable {
+        private Socket s;
+        private DataInputStream dis = null;
+        private boolean bConnected = false;
+        public Client(Socket s) {
+            this.s = s;
+            try {
+                dis = new DataInputStream(s.getInputStream());
+                bConnected = true;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (bConnected) {
+                    String str = dis.readUTF();
+                    System.out.println(str);
+                    }
+                }catch(IOException e){
+                    e.printStackTrace();
+                }finally{
+                    try {
+                        if (dis != null) {
+                            dis.close();
+                        }
+                        if (s != null) {
+                            s.close();
+                        }
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+
+            }
+        }
+    }
+

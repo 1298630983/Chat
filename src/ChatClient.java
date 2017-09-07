@@ -3,6 +3,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -12,7 +13,9 @@ import java.net.Socket;
  */
 public class ChatClient extends Frame{
     DataOutputStream dos = null;
+    DataInputStream dis = null;
     Socket s = null;
+    private boolean bConnected = false;
     TextField tfTxt = new TextField();
     TextArea taContent = new TextArea();
 
@@ -35,13 +38,17 @@ public class ChatClient extends Frame{
         pack();
         setVisible(true);
         connect();
+
+        new Thread(new RecvThread()).start();
     }
 
     public void connect() {
         try {
             s = new Socket("192.168.2.162",8888);
             System.out.println("Connected!");
+            bConnected = true;
             dos = new DataOutputStream(s.getOutputStream());
+            dis = new DataInputStream(s.getInputStream());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -62,16 +69,34 @@ public class ChatClient extends Frame{
         @Override
         public void actionPerformed(ActionEvent e) {
             String str = tfTxt.getText().trim();
-            taContent.setText(str);
+            //taContent.setText(str);
             tfTxt.setText("");
             try {
-                //DataOutputStream dos = new DataOutputStream(s.getOutputStream());
                 dos.writeUTF(str);
                 dos.flush();
-                //dos.close();
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
         }
     }
-}
+
+    private class RecvThread implements Runnable {
+
+        @Override
+        public void run() {
+
+                try {
+                    while (bConnected) {
+                        String str = dis.readUTF();
+                        //System.out.println(str);
+                        taContent.setText(taContent.getText() + str + '\n');
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
+

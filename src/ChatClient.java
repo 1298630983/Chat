@@ -7,26 +7,28 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * Created by Jason on 2017/9/6.
  */
-public class ChatClient extends Frame{
+public class ChatClient extends Frame {
     DataOutputStream dos = null;
     DataInputStream dis = null;
     Socket s = null;
     private boolean bConnected = false;
     TextField tfTxt = new TextField();
     TextArea taContent = new TextArea();
+    Thread tRecv = new Thread(new RecvThread());
 
     public static void main(String[] args) {
         new ChatClient().launchFrame();
     }
 
     public void launchFrame() {
-        setBounds(100,100,400,400);
-        add(tfTxt,BorderLayout.SOUTH);
-        add(taContent,BorderLayout.NORTH);
+        setBounds(100, 100, 400, 400);
+        add(tfTxt, BorderLayout.SOUTH);
+        add(taContent, BorderLayout.NORTH);
         tfTxt.addActionListener(new TfListener());
         addWindowListener(new WindowAdapter() {
             @Override
@@ -39,12 +41,12 @@ public class ChatClient extends Frame{
         setVisible(true);
         connect();
 
-        new Thread(new RecvThread()).start();
+        tRecv.start();
     }
 
     public void connect() {
         try {
-            s = new Socket("192.168.2.162",8888);
+            s = new Socket("192.168.2.162", 8888);
             System.out.println("Connected!");
             bConnected = true;
             dos = new DataOutputStream(s.getOutputStream());
@@ -56,15 +58,34 @@ public class ChatClient extends Frame{
     }
 
     public void disconnect() {
+
         try {
             dos.close();
+            dis.close();
             s.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        /*
+        try {
+            bConnected = false;
+            tRecv.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }finally {
+            try {
+                dos.close();
+                dis.close();
+                s.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        */
     }
 
-    private class TfListener implements ActionListener{
+    private class TfListener implements ActionListener {
 
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -85,18 +106,20 @@ public class ChatClient extends Frame{
         @Override
         public void run() {
 
-                try {
-                    while (bConnected) {
-                        String str = dis.readUTF();
-                        //System.out.println(str);
-                        taContent.setText(taContent.getText() + str + '\n');
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
+            try {
+                while (bConnected) {
+                    String str = dis.readUTF();
+                    //System.out.println(str);
+                    taContent.setText(taContent.getText() + str + '\n');
                 }
+
+            } catch (SocketException e) {
+                System.out.println("byebye!");
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
-
+}
 
 

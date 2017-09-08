@@ -77,6 +77,7 @@ System.out.println(str);
                     for (int i = 0; i < clients.size() ; i++) {
                         Client c = clients.get(i);
                         c.send(str);
+//System.out.println("a string send!");
                     }
                     }
                 }catch(IOException e){

@@ -4,6 +4,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,9 +33,8 @@ public class ChatServer {
                 clients.add(c);
             }
         } catch (IOException e) {
-
             System.out.println("Client Closed!");
-        }finally {
+        } finally {
             try {
                 ss.close();
             } catch (IOException e) {
@@ -70,35 +70,43 @@ public class ChatServer {
 
         @Override
         public void run() {
+            Client c = null;
             try {
                 while (bConnected) {
                     String str = dis.readUTF();
-System.out.println(str);
-                    for (int i = 0; i < clients.size() ; i++) {
-                        Client c = clients.get(i);
+                    System.out.println(str);
+                    for (int i = 0; i < clients.size(); i++) {
+                        c = clients.get(i);
                         c.send(str);
 //System.out.println("a string send!");
                     }
+                }
+            } catch (SocketException e) {
+                if (c != null) {
+                    clients.remove(c);
+                }
+                System.out.println("a client quit!");
+            } catch (EOFException e) {
+                System.out.println("Client Closed!");
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (dis != null) {
+                        dis.close();
                     }
-                }catch(IOException e){
-                    e.printStackTrace();
-                }finally{
-                    try {
-                        if (dis != null) {
-                            dis.close();
-                        }
-                        if (dos != null) {
-                            dos.close();
-                        }
-                        if (s != null) {
-                            s.close();
-                        }
-                    } catch (IOException e1) {
-                        e1.printStackTrace();
+                    if (dos != null) {
+                        dos.close();
                     }
+                    if (s != null) {
+                        s.close();
+                    }
+                } catch (IOException e1) {
+                    e1.printStackTrace();
                 }
 
             }
         }
     }
+}
 
